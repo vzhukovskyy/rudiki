@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<head>
+    <title>Rudiki</title>
+    <link rel="icon" type="image/png" href="/images/home.png">
+    <link rel="stylesheet" href="/css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /> 
+    <meta name="mobile-web-app-capable" content="yes">
+</head>
+
+<body>
+    <div class='section'>
+        <div class='labelSection'>
+            <div class='label'>Світло на вулиці</div>
+            <div class='status' id='switch1Info'></div>
+        </div>
+        <div class='buttonSection'>
+            <label class="switchButton" for='myCheckbox1'>
+                <input type="checkbox" id='myCheckbox1'>
+                <div class="slider round"></div>
+            </label>
+        </div>
+    </div>
+
+    <div class='section'>
+        <div class='labelSection'>
+            <div class='label'>Непід'єднаний вимикач</div>
+            <div class='status' id='switch2Info'></div>
+        </div>
+         <div class='buttonSection'>
+             <label class="switchButton" for='myCheckbox2'>
+                <input type="checkbox" id='myCheckbox2'>
+                <div class="slider round"></div>
+            </label>
+        </div>
+    </div>
+    
+    <div class='rest'>
+        <a href='/geo'>Geo</a>
+    </div>
+    
+    <script>
+        var switch1Info = document.getElementById('switch1Info');
+        var myCheckbox1 = document.getElementById('myCheckbox1');
+        myCheckbox1.addEventListener('change', function(evt) {
+            sendRequestToSwitch(0, myCheckbox1.checked);
+        });
+
+        var switch2Info = document.getElementById('switch2Info');
+        var myCheckbox2 = document.getElementById('myCheckbox2');
+        myCheckbox2.addEventListener('change', function(evt) {
+            sendRequestToSwitch(1, myCheckbox2.checked);
+        });
+        
+        httpGetAsync("/api/getSwitchState", updateUi);
+
+        // functions
+        
+        function sendRequestToSwitch(index, state) {
+            var req = new XMLHttpRequest();
+            var url = "/api/setSwitchState";
+            var params = JSON.stringify({switch:index, state:state});
+//            var username = 'user';
+//            var password = 'password';
+            req.open("POST", url, true/*, username, password*/); // -> http://user:pass@galileo:8080/...
+//            req.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));  // encode string to Base64      
+            req.setRequestHeader("Content-type", "application/json");
+            
+            req.onreadystatechange = function(args) {
+                if(req.readyState == XMLHttpRequest.DONE && req.status == 200) {
+                    updateUi(req.responseText);
+                }
+            }
+            req.send(params);
+        }
+        
+        function httpGetAsync(theUrl, callback) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.onreadystatechange = function() { 
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                    callback(xmlHttp.responseText);
+            }
+            xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+            xmlHttp.send(null);
+        }
+        
+        function updateUi(jsonString) {
+            console.log('updateUi',jsonString);
+            var data = JSON.parse(jsonString);            
+            
+            myCheckbox1.checked = (data.states[0] == 1);
+            var secondsToTurnoffSwitch1 = getSecondsToTurnoff(data.turnoffs[0]);
+            switch1Info.textContent = getInfoText(secondsToTurnoffSwitch1);
+            
+            myCheckbox2.checked = (data.states[1] == 1);
+            var secondsToTurnoffSwitch2 = getSecondsToTurnoff(data.turnoffs[1]);
+            switch2Info.textContent = getInfoText(secondsToTurnoffSwitch2);
+            
+            schedulePeriodicUpdate(secondsToTurnoffSwitch1, secondsToTurnoffSwitch2);
+        }
+        
+        function getSecondsToTurnoff(turnoff) {
+            return turnoff ? turnoff : 0;
+        }
+        function getInfoText(seconds) {
+            if(seconds > 0) {
+                var minutes = Math.floor(seconds/60);
+                var secondsLeft = seconds-minutes*60;
+                return  '(Вимкнеться через '+minutes+' хв. '+secondsLeft+' сек.)';
+            } 
+            else {
+                return '(Вимкнений)';
+            }
+        }
+        
+        var timerId;
+        function schedulePeriodicUpdate(seconds1, seconds2) {
+            if(timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            
+            if(seconds1 > 0 || seconds2 > 0) {
+                var now = Date.now();
+                var switch1TurnoffTime = now + seconds1*1000;
+                var switch2TurnoffTime = now + seconds2*1000;
+                var latestTurnoffTime = Math.max(switch1TurnoffTime, switch2TurnoffTime);
+                
+                timerId = setInterval(function() {
+                    var now = Date.now();
+                    if(now <= latestTurnoffTime) {
+                        var secondsTillSwitch1Turnoff = Math.round((switch1TurnoffTime - now)/1000);
+                        if(secondsTillSwitch1Turnoff > 0) {
+                            switch1Info.textContent = getInfoText(secondsTillSwitch1Turnoff);                            
+                        } else {
+                            switch1Info.textContent = getInfoText(0); 
+                            myCheckbox1.checked = false;
+                        }
+                        
+                        var secondsTillSwitch2Turnoff = Math.round((switch2TurnoffTime - now)/1000);
+                        if(secondsTillSwitch2Turnoff > 0) {
+                            switch2Info.textContent = getInfoText(secondsTillSwitch2Turnoff);                            
+                        } else {
+                            switch2Info.textContent = getInfoText(0); 
+                            myCheckbox2.checked = false;
+                        }
+                    }
+                    else {
+                        clearInterval(timerId);
+                        timerId = null;
+                        
+                        window.location.reload();
+                    }
+                }, 1000);
+            }
+        }
+    </script>
+</body>
