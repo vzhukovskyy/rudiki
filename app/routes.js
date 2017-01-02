@@ -5,6 +5,7 @@ var demoMode = require('../mode').demoMode();
 var auth = demoMode ? require('../config-demo/auth') : require('../config-production/auth');
 var logger = require('./logger');
 const path = require('path');
+var GoogleAuth = require('google-auth-library');
 
 module.exports = function(app, passport) {
    
@@ -18,33 +19,86 @@ module.exports = function(app, passport) {
         failureRedirect: '/'
     }));
     
+    
     // Only show dashboard if authenticated, so static serve does not work here
-    app.get('/dashboard', isAuthenticated, isAuthorized, function(req, res) {
+    app.get('/dashboard', isUiAuthorized, function(req, res) {
         var filename = path.join(__dirname, '..', 'views', 'dashboard.html');
         res.sendfile(filename);
     });
 
-    app.get('/api/getSwitchState', function(req, res) {
+    app.get('/api/getSwitchState', isApiAuthorized, function(req, res) {
         res.send(api.getSwitchState());
     });
 
-    app.post('/api/setSwitchState', function(req, res) {
+    app.post('/api/setSwitchState', isApiAuthorized, function(req, res) {
+        console.log('route /api/setSwitchState req.user', req.user);
         api.setSwitchState(req);
         res.send(api.getSwitchState());
     });
 }
 
-function isAuthenticated(req, res, next) {
-    if(req.isAuthenticated())
-        return next();
-
-    res.redirect('/');
-}
-
-function isAuthorized(req, res, next) {
+function isUiAuthorized(req, res, next) {
     if(demoMode || auth.authorizedUsers.indexOf(req.user) >= 0)
         return next();
 
-    res.status(403).send("Неавторизована спроба доступу занотована.");
-    logger.log('Not authorized access attempt', req);
+    if(req.user) {
+        // someone not authorized tries to access web page
+        logger.log('Not authorized UI access attempt. User '+req.use+' from '+req.connection.remoteAddress+', user-agent:'+req.headers['user-agent'], req);
+        res.status(403).send("Not authorized API access attempt recorded.");
+    }
+    else {
+        // need to authenticate
+        res.redirect('/');
+    }
+}
+
+var googleAuth = new GoogleAuth;
+var oauthClient = new googleAuth.OAuth2(auth.googleAuth.clientID, '', '');
+
+function isApiAuthorized(req, res, next) {
+    var token;
+    if(req.headers['authorization']) {
+        if(req.headers.authorization.startsWith("OAuth ")) {
+            token = req.headers.authorization.substr(6);
+        }
+    }
+    
+    //console.log('isApiAuthorized req.user=', req.user, ' token=',token);
+    
+    if(token) {
+        var verificationStarted = Date.now();
+        oauthClient.verifyIdToken(
+            token,
+            auth.googleAuth.clientID,
+            // Or, if multiple clients access the backend:
+            //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3],
+            function(e, login) {
+                var verificationFinished = Date.now();
+                console.log('Token verification took ', (verificationFinished-verificationStarted), ' ms');
+                
+                if(e) {
+                    console.log('isApiAuthorized token verification callback: error', e);
+                }
+                else {
+                    var payload = login.getPayload();
+
+                    //console.log('isApiAuthorized token verification callback: payload', payload);
+                    
+                    req.user = payload.email;
+                    console.log('isApiAuthorized req.user', req.user);
+                    return isUserAuthorized(req.user, next);
+                }
+            });
+    }
+    else {
+        return isUserAuthorized(req.user, next);
+    }
+}
+
+function isUserAuthorized(email, next) {
+    if(demoMode || auth.authorizedUsers.indexOf(email) >= 0)
+        return next();
+        
+    res.status(403).send("Not authorized API access attempt recorded.");
+    logger.log('Not authorized API access attempt from '+req.connection.remoteAddress+', user-agent:'+req.headers['user-agent'], req);
 }

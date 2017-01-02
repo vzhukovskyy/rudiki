@@ -1,12 +1,13 @@
 {
-    "name": "Rudiki",
-    "main": "server.js",
-    "dependencies": {
-        "express": "~4.0.0",
-        "passport": "0.1.17",
-        "passport-google-oauth" : "~0.1.5",
-        "cookie-parser": "~1.0.0",
-        "body-parser": "~1.0.0",
-        "express-session": "~1.0.0"     
-    }
+  "name": "Rudiki",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "~1.0.0",
+    "cookie-parser": "~1.0.0",
+    "express": "~4.0.0",
+    "express-session": "~1.0.0",
+    "google-auth-library": "^0.10.0",
+    "passport": "0.1.17",
+    "passport-google-oauth": "~0.1.5"
+  }
 }
