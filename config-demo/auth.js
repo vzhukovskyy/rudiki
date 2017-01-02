@@ -6,5 +6,6 @@ module.exports = {
     },
     'authorizedUsers': [
         'changeme@gmail.com'
-    ]
+    ],
+    secret: 'secret'
 };

@@ -10,6 +10,9 @@ var bodyParser = require('body-parser');
 var session = require('express-session');
 var fs = require('fs');
 
+var demoMode = require('./mode').demoMode();
+var auth = demoMode ? require('./config-demo/auth') : require('./config-production/auth');
+
 // configuration ===============================================================
 require('./config/passport')(passport); // pass passport for configuration
 
@@ -18,7 +21,7 @@ app.use(cookieParser()); // read cookies (needed for auth)
 app.use(bodyParser());
 
 // required for passport
-app.use(session({ secret: 'rudikiki' })); // session secret
+app.use(session({ secret: auth.secret })); // session secret
 app.use(passport.initialize());
 app.use(passport.session()); // persistent login sessions
 

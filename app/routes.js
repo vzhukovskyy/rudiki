@@ -45,6 +45,6 @@ function isAuthorized(req, res, next) {
     if(demoMode || auth.authorizedUsers.indexOf(req.user) >= 0)
         return next();
 
-    res.send("Неавторизована спроба доступу занотована.");
+    res.status(403).send("Неавторизована спроба доступу занотована.");
     logger.log('Not authorized access attempt', req);
 }
