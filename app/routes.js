@@ -74,10 +74,10 @@ function isApiAuthorized(req, res, next) {
             //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3],
             function(e, login) {
                 var verificationFinished = Date.now();
-                console.log('Token verification took ', (verificationFinished-verificationStarted), ' ms');
+                console.log('Token verification took', (verificationFinished-verificationStarted), 'ms');
                 
                 if(e) {
-                    console.log('isApiAuthorized token verification callback: error', e);
+                    logger.log('Token verification error'+e, req);
                 }
                 else {
                     var payload = login.getPayload();
@@ -85,9 +85,10 @@ function isApiAuthorized(req, res, next) {
                     //console.log('isApiAuthorized token verification callback: payload', payload);
                     
                     req.user = payload.email;
-                    console.log('isApiAuthorized req.user', req.user);
-                    return isUserAuthorized(req.user, next);
+                    //console.log('isApiAuthorized req.user', req.user);                    
                 }
+                
+                return isUserAuthorized(req.user, next);
             });
     }
     else {
