@@ -56,11 +56,15 @@ var googleAuth = new GoogleAuth;
 var oauthClient = new googleAuth.OAuth2(auth.googleAuth.clientID, '', '');
 
 function isApiAuthorized(req, res, next) {
+    
     var token;
-    if(req.headers['authorization']) {
+    if(req.headers.authorization) {
         if(req.headers.authorization.startsWith("OAuth ")) {
             token = req.headers.authorization.substr(6);
         }
+    }
+    if(req.query.access_token) {
+        token = req.query.access_token;
     }
     
     //console.log('isApiAuthorized req.user=', req.user, ' token=',token);
@@ -88,16 +92,16 @@ function isApiAuthorized(req, res, next) {
                     //console.log('isApiAuthorized req.user', req.user);                    
                 }
                 
-                return isUserAuthorized(req.user, next);
+                return isUserAuthorized(req, res, next);
             });
     }
     else {
-        return isUserAuthorized(req.user, next);
+        return isUserAuthorized(req, res, next);
     }
 }
 
-function isUserAuthorized(email, next) {
-    if(demoMode || auth.authorizedUsers.indexOf(email) >= 0)
+function isUserAuthorized(req, res, next) {
+    if(demoMode || auth.authorizedUsers.indexOf(req.user) >= 0)
         return next();
         
     res.status(403).send("Not authorized API access attempt recorded.");

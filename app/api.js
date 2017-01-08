@@ -7,13 +7,18 @@ module.exports = {
     },
 
     setSwitchState: function(req) {
-        var switchNo = req.body.switch;
-        var state = req.body.state;
-        
-        hw.write(switchNo, state);
-        logger.log('turned '+(state?'on':'off')+' switch '+hw.getSwitchName(switchNo), req);
+//        var switchNo = req.body.switch;
+//        var state = req.body.state;        
+        if(req.query.switch && req.query.state) {
+            var switchNo = req.query.switch;
+            var state = (req.query.state == 'true');
+            console.log('setSwitchState ',switchNo,state);
 
-        scheduleAutomaticTurnoff(switchNo, state);
+            hw.write(switchNo, state);
+            logger.log('turned '+(state?'on':'off')+' switch '+hw.getSwitchName(switchNo), req);
+
+            scheduleAutomaticTurnoff(switchNo, state);
+        }
     }
 };
 

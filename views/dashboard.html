@@ -58,20 +58,18 @@
         
         function sendRequestToSwitch(index, state) {
             var req = new XMLHttpRequest();
-            var url = "/api/setSwitchState";
-            var params = JSON.stringify({switch:index, state:state});
-//            var username = 'user';
-//            var password = 'password';
-            req.open("POST", url, true/*, username, password*/); // -> http://user:pass@galileo:8080/...
-//            req.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));  // encode string to Base64      
-            req.setRequestHeader("Content-type", "application/json");
+            var url = "/api/setSwitchState?switch="+index+"&state="+state;
+//            var params = JSON.stringify({switch:index, state:state});
+            req.open("POST", url, true);
+//            req.setRequestHeader("Content-type", "application/json");
             
             req.onreadystatechange = function(args) {
                 if(req.readyState == XMLHttpRequest.DONE && req.status == 200) {
                     updateUi(req.responseText);
                 }
             }
-            req.send(params);
+//            req.send(params);
+            req.send();
         }
         
         function httpGetAsync(theUrl, callback) {
