@@ -21,7 +21,7 @@ module.exports = function(app, passport) {
     
     
     // Only show dashboard if authenticated, so static serve does not work here
-    app.get('/dashboard', isUiAuthorized, function(req, res) {
+    app.get('/dashboard', isUiAuthorized, memStats, function(req, res) {
         var filename = path.join(__dirname, '..', 'views', 'dashboard.html');
         res.sendfile(filename);
     });
@@ -82,14 +82,11 @@ function isApiAuthorized(req, res, next) {
                 
                 if(e) {
                     logger.log('Token verification error'+e, req);
+                    res.status(403).send("Not authorized API access attempt recorded.");
                 }
                 else {
                     var payload = login.getPayload();
-
-                    //console.log('isApiAuthorized token verification callback: payload', payload);
-                    
-                    req.user = payload.email;
-                    //console.log('isApiAuthorized req.user', req.user);                    
+                    req.user = payload.email;              
                 }
                 
                 return isUserAuthorized(req, res, next);
@@ -106,4 +103,14 @@ function isUserAuthorized(req, res, next) {
         
     res.status(403).send("Not authorized API access attempt recorded.");
     logger.log('Not authorized API access attempt from '+req.connection.remoteAddress+', user-agent:'+req.headers['user-agent'], req);
+}
+
+function memStats(req, res, next) {
+    var mu = process.memoryUsage();
+    logger.log('Memory usage rss='+toMb(mu.rss)+"Mb, heapTotal="+toMb(mu.heapTotal)+"Mb, heapUsed="+toMb(mu.heapUsed)+"Mb, external="+toMb(mu.external));
+    return next();
+}
+
+function toMb(size) {
+    return size ? Math.round(size/1024/1024) : null;
 }
