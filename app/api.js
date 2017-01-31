@@ -19,6 +19,23 @@ module.exports = {
 
             scheduleAutomaticTurnoff(switchNo, state);
         }
+    },
+    
+    notifyGeoSensor: function(req) {
+        logger.log('GeoSensor notification received');
+        
+        var now = new Date();
+        if(now.getHours() >= 18) {
+            var switchNo = 0;
+            hw.write(switchNo, true);
+            logger.log('turned on switch '+hw.getSwitchName(switchNo), req);
+            
+            scheduleAutomaticTurnoff(switchNo, state);
+            
+            return "It's dark outside, I've turned on the outdoor light for you";
+        }
+        
+        return "It's bright outside, not turning on the outdoor light";
     }
 };
 

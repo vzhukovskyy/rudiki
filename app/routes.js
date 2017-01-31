@@ -35,6 +35,14 @@ module.exports = function(app, passport) {
         api.setSwitchState(req);
         res.send(api.getSwitchState());
     });
+    
+    app.post('/api/notifyGeoSensor', isApiAuthorized, function(req, res) {
+        console.log('route /api/notifyGeoSensor req.user', req.user);
+        var response = api.notifyGeoSensor(req);
+        
+        res.setHeader('Content-Type', 'text/plain');
+        res.send(response);
+    });
 }
 
 function isUiAuthorized(req, res, next) {
