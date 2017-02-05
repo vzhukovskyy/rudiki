@@ -30,7 +30,7 @@ module.exports = {
             hw.write(switchNo, true);
             logger.log('turned on switch '+hw.getSwitchName(switchNo), req);
             
-            scheduleAutomaticTurnoff(switchNo, state);
+            scheduleAutomaticTurnoff(switchNo, true);
             
             return "It's dark outside, I've turned on the outdoor light for you";
         }
